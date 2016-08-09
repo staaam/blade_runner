@@ -1,0 +1,196 @@
+Multiple applications.
+  MySql
+  Postgres
+  Rabbitmq
+  Cassandra
+  (any app)
+  ** Elasticsearch
+
+Types of tunning
+  server conf (# servers, # cpus, ram, disks (hdd, ssd, cloud), # disks)
+  	file handles, disk block size, ...
+  application conf
+  	when need to restart the process: vitual memory, java heap size, gc params
+  		- command line params
+  		- config file
+  		- env variables
+  	** could be changed through api: es # shards, es mapping, sql indexes/partions, # replicas
+		note:
+		  case of different workloads, for example elasticsearch: same cluster used for logs (with a lot of writes) and for data access (lot of reads)
+
+different monitoring types:
+  server metrics (memory, cpu, load, io, netwrok)
+
+  app metrics. examples:
+  	java: hot threads, heap usage, ..
+  	app itself: index latency, search latency, ..
+
+  ** external metrics:
+    dropped/failed/throtled operations/requests
+    operations/requests time
+    total workload time
+
+data types:
+  from captured data
+  for simulated work load
+
+---
+1. create data flow snapshot to allow "replay" it
+	* from existing server
+	* from static file
+2. set up environment
+	* servers (cloud/on prem) : include server confiugration
+	* run application : include static app conf
+	* prepare application : include dynamic app conf
+3. execute data flow replay
+4. monitor for performance (jmeter)
+5. display results
+
+
+pseudo code:
+
+for server_conf in server_confs:
+	create_server_setup(server_conf)
+
+	for static_app_conf in static_app_confs:
+		run_app(static_app_conf)
+
+		for dynamic_app_conf in dynamic_app_confs:       		* MVP
+			setup_dynamic_conf(dynamic_app_conf)         		* MVP
+
+			for client_conf in client_confs:
+				for workload in workloads:               		* MVP
+					start_monitoring()                   		* MVP
+					replay_data(workload, client_conf)   		* MVP
+					run_results = collect_results()		 		* MVP
+					results.add(server_conf, static_app_conf, 	* MVP
+						dynamic_app_conf, client_conf, run_results)
+
+for client_conf in client_confs:
+	order_results()   * MVP -- need logic which will decide what is best
+display_results() *
+
+Pre MVP:
+  find a good name
+  buy domain
+
+MVP:
+  elasticsearch
+  app dynamic conf
+  "bruteforce" configuration
+  external metrics
+
+V2:
+  client_conf
+  postgres (or other app)
+  nicer display_results
+
+V3:
+  server and static app configuration
+  server metrics
+
+V4:
+  "binary search" configuration
+  application metrics
+
+V5:
+  exit
+
+Michael Gelfand‏ <michael.gelfand@gmail.com‏>
+21:26 (לפני דקה)
+
+
+
+
+index_name=test_index
+es_url=...
+
+for n in [1..5]:
+  curl -XPOST es_url/test_index -d "settings: shard_count: $n"
+
+  run_workload()
+
+--
+for n in [1..5]:
+  curl -XPOST es_url/test_index -d "settings: shard_count: $n"
+
+  for m in [1..5]:
+    curl -XPUT es_url/test_index -d "settings: replica_count: $m"
+
+  	run_workload()
+
+[
+s=1,r=1
+s=2,r=1
+..
+s=1,r=2
+..
+]
+
+
+for c in config:
+  curl -XPOST es_url/test_index -d "settings: shard_count: $n"
+  curl -XPUT es_url/test_index -d "settings: replica_count: $m"
+  for p in parametrs:
+    p.apply(**c)
+
+  run_workload(**c)
+
+
+actions: cmd, api call (method, url, data), mysql commands, postgres command
+
+index-config-template.xml
+{
+	"index": {
+		"shard": $shard
+		"replica": $replica
+		"relocation": {
+			"shards_same_time": $shard_same_time
+		}
+	},
+}
+{"index":{}}
+es:
+  index:
+  	params:
+	    shard: 1..5
+	    replica: 1..5
+	    shard_same_time: 1..5
+	    index: [a,b,c]
+	action:
+		type: api call
+		url: es_url/$index
+		method: POST
+		data_template: index-config-template.xml
+
+  clsuter:
+    params:
+        method: [get,post]
+        url: [..,..]
+    	data_p1: [..., ...]
+    	data_p2: [..]
+    dynamic_params:
+    	data: sdf.xml
+    action:
+        type: command
+        command: curl -X$METHOD $URL -d '$DATA'
+
+
+
+class ESIndexParameter():
+  children = [{name:shard,range:1..5}, {name:replica, range:1..5}]
+
+  def generate_all_possible_permutations():
+  	return permutations
+
+  def generate_conf():
+	conf = ""
+  	for p in generate_all_possible_permutations()
+	    for c in children:
+	      conf += c.apply(i) + ' '
+
+    	yield conf
+
+  def apply():
+  	conf = generate_next_conf()
+    return 'curl -XPUT es_url/test_index -d "settings: ' + conf
