@@ -1,0 +1,39 @@
+es:
+  index:
+    params:
+      shard:
+        type: range
+        start: 1
+        end: 5
+      replica:
+        type: range
+        start: 1
+        interval: 2
+        end: 10
+      shard_same_time:
+        type: range
+        start: 1
+        end: 5
+      index:
+        type: list
+        values: [a,b,c]
+    actions:
+      - type: api call
+        url: es_url/$index
+        method: POST
+        data_template: index-config-template.xml
+
+
+  cluster:
+    params:
+      method:
+        type: list
+        values: [get,post]
+      url:
+        type: list
+        values: [url1,url2]
+    dynamic_params:
+      data: sdf.xml
+    action:
+      - type: command
+        command: curl -X$METHOD $URL -d '$DATA'
