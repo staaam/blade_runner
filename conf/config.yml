@@ -5,20 +5,24 @@ es:
         type: range
         start: 1
         end: 5
-      replica:
-        type: range
-        start: 1
-        interval: 2
-        end: 10
-      shard_same_time:
-        type: range
-        start: 1
-        end: 5
+#      replica:
+#        type: range
+#        start: 1
+#        interval: 2
+#        end: 10
+#      shard_same_time:
+#        type: range
+#        start: 1
+#        end: 5
       index:
         type: list
-        values: [a,b,c]
+        values: [index1,index2,index3]
     actions:
-      - type: api call
+      - type: curl
+        url: es_url/{index}
+        method: POST
+        data_template: 'shard: {shard}'
+      - type: curl
         url: es_url/$index
         method: POST
         data_template: index-config-template.xml
@@ -34,6 +38,6 @@ es:
         values: [url1,url2]
     dynamic_params:
       data: sdf.xml
-    action:
+    actions:
       - type: command
-        command: curl -X$METHOD $URL -d '$DATA'
+        command: curl -X{method} {url} -d '$DATA'
